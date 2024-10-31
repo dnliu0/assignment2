@@ -216,10 +216,14 @@
 
   <div class="flex-container row">
     <div class="map"><Map data={data} fullData={fullData} variable={var1}></Map></div>
+    <p>Cuisine Diversity Map</p>
     <div class="map"><Map data={data} fullData={fullData} variable={var3}></Map></div>
+    <p>Most Popular Cuisine</p>
     <div class="flex-container col">
       <div class="hist"><Histogram data={data} fullData={fullData} variable={var1} bind:filter={filter1} update={updateData}></Histogram></div>
+      <p>Cuisine Count by Zip Code</p>
       <div class="hist"><Histogram data={data} fullData={fullData} variable={var2} bind:filter={filter2} update={updateData}></Histogram></div>
+      <p>Restaurant Count by Zip Code</p>
     </div>
   </div>
 </main>
