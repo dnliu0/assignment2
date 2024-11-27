@@ -4,8 +4,14 @@
   
   import Map from './Map.svelte';
   import Histogram from './Histogram.svelte';
+  import Heatmap from './Heatmap.svelte';
+  import Scatterplot from './Scatterplot.svelte';
+  import Histogram2 from './Histogram2.svelte';
+  import BarChart from './BarChart.svelte';
+    import Parallel from './Parallel.svelte';
 
 	let data = [];
+  let data2 = [];
   let fullData = [];
   let filter1 = [];
   let filter2 = [];
@@ -23,219 +29,264 @@
   let var1 = "diversity";
   let var3 = 'max_cuisine';
   let var2 = 'count';
+  let new_cuisine_list;
+  let criteria = [];
+  let uniqueAspects = ['Data Meet Purpose', 'Data Quality Check', 'Pay Access Decision'];
+  let uniqueInfoUsed = ['Topic alignment',
+                    'Comprehensive Coverage',
+                    'Required Attribute',
+                    'Data Ranges',
+                    'Patterns',
+                    'Granularity',
+                    'Collection Timeframe',
+                    'Update Frequency',
+                    'Composition of Data Fields',
+                    'Sample Data',
+                    'Methods Used',
+                    'Good Practices Adherence',
+                    'Unusable Data',
+                    'Completeness',
+                    'Access to the Full Dataset',
+                    'Suitable Format',
+                    'High Quality Supplements',
+                    'Data Provider Communication',
+                    'Reputable Source',
+                    'Recommendations',
+                    'Popular Dataset',
+                    'Methods Comply with Legal Requirements',
+                    'Access Terms'];
+  // ['Source reputation', 'User reviews', 'Metadata', 'Data collection conditions', 'Prevalence of missing data', 'Ability to access full datasets', 'Sample Data', 'Visualizations'];
+  let userInput = [];
+  let marks;
+  let marks2;
+  let question;
+  let indicator;
+  let brushLayer;
+  let brush;
 
-	onMount(async function() {
-    // load data from csv (source: https://chicagohealthatlas.org/download)
-    // let table = d3.csv('chi-health-data.csv', (d) => ({
-    //       ...d,
-    //       'Name': d['Name'].substring(6),
-    //       'EKW_2022': +d['EKW_2022'],
-    //       'PCT-W_2018-2022': +d['PCT-W_2018-2022'],
-    //       'VAC_2018-2022': +d['VAC_2018-2022']
-    //     }));
-    
+	onMount(async function() {    
     //load data from 
-    let table = d3.csv('latest.csv', (d) => ({
+    let table = d3.csv('forassign3.csv', (d) => ({
           ...d,
-          'ZIPCODE': d['ZIPCODE'].toString().slice(0, 5),
+          //'ZIPCODE': d['ZIPCODE'].toString().slice(0, 5),
+          // 'Information Used' : d['Information Used'].split(', '), 
+          // 'Information Used_N' : d['Information Used_N'].split(', '), 
         }));
 
-    // let geocoord = d3.json('census-tracts.geojson')
-    //   .then((d) => d.features);
-    // https://www.kaggle.com/datasets/saidakbarp/nyc-zipcode-geodata?resource=download
-    let geocoord = d3.json('zip-code.geojson')
-      .then((d) => d.features);
     
-    await Promise.all([table, geocoord]).then((values) => {
+    await Promise.all([table]).then((values) => {
       // console.log(values);
       let table = values[0];
-      let modified = table;
-      let geocoord = values[1];
-      for (let k = 0; k < table.length; k++) {
-        if (!cuisine_list.includes(table[k]['CUISINE DESCRIPTION'])) {
-          modified[k]['CUISINE DESCRIPTION'] = 'Others'
-        }
-        if (table[k]['CUISINE DESCRIPTION'] == 'Bakery Products/Desserts') {
-          modified[k]['CUISINE DESCRIPTION'] = 'Desserts'
-        }
-      }
-      let max_cuisine = countByCuisine(modified);
-      let diversity = getDiversity(table);
-      let count = getCount(table);
-      // console.log(max_animal_per_zip);
-      // join the variables we want to show on the map
-      for (let i = 0; i < geocoord.length; i++) {
-        let zip = geocoord[i].properties.modzcta;
-        let pop = geocoord[i].properties.pop_est;
-        pop += pop;
-        // console.log(boro)
-        let found = false;
-        let j = 0;
-        while (!found && table.length > j) {
-          if (table[j]['ZIPCODE'] == zip) {
-            found = true;
-            data.push(geocoord[i]);
-            data[data.length - 1].properties['max_cuisine'] = max_cuisine[zip].cuisine;
-            data[data.length - 1].properties['count'] = count[zip];
-            console.log(count)
-            data[data.length - 1].properties['diversity'] = diversity[zip];
-          } else {
-            j++;
+      let aspects = [];
+      criteria = Object.keys(table[0]);
+      let criteriaMentioned = [];
+      for (let i = 0; i < 68; i++) {
+        data.push({});
+        data[i]['idx'] = i;
+        let count = 0;
+        Object.keys(table[0]).forEach(o => {
+          if (o) {
+            data[i][o] = +table[i][o];
+            if (table[i][o] === "1") {
+              count += 1;
+              criteriaMentioned.push(o)
+            }
           }
-        }
+          
+        });
+        data[i]['count'] = count;
+        data[i]['mentioned'] = criteriaMentioned;
+        criteriaMentioned = [];
+
       }
       console.log(data);
+      //console.log(data);
       fullData = [...data];
     });
 	});
-  function getDiversity(table){
-    let zip_count = {};
-    for (let k = 0; k < table.length; k++) {
-      let curr_zip = table[k]['ZIPCODE'];
-      let cuisine = table[k]['CUISINE DESCRIPTION'];
-      if (!zip_count[curr_zip]) {
-            zip_count[curr_zip] = {};
-      }
-          if (zip_count[curr_zip][cuisine]) {
-            zip_count[curr_zip][cuisine] += 1;
-          } else {
-            zip_count[curr_zip][cuisine] = 1;
-          }
-              
-    }
-    let diversity_count = {};
-      
-      for (let z in zip_count) {
-          diversity_count[z] = Object.keys(zip_count[z]).length;
-      }
-      return diversity_count;  
-  }
-  function getCount(table){
-    let zip_count = {};
-        for (let k = 0; k < table.length; k++) {
-          let curr_zip = table[k]['ZIPCODE'];
-          if (zip_count[curr_zip]) {
-            zip_count[curr_zip] += 1;
-            
-          } else {
-            zip_count[curr_zip] = 1;
-          }
-        }
-  
-      return zip_count;
-  
-}
-
-  function countByCuisine(table){
-    let zip_count = {};
-        for (let k = 0; k < table.length; k++) {
-          let curr_zip = table[k]['ZIPCODE'];
-          let cuisine = table[k]['CUISINE DESCRIPTION'];
-          
-          if (!zip_count[curr_zip]) {
-            zip_count[curr_zip] = {};
-          }
-          if (zip_count[curr_zip][cuisine]) {
-            zip_count[curr_zip][cuisine] += 1;
-            
-          } else {
-            zip_count[curr_zip][cuisine] = 1;
-          }
-        }
-        let max_cuisine_per_zip = {};
-        for (let z in zip_count) {
-          let cuisine_types = zip_count[z];
-          let max_cuisine;
-          let max_num = -1;
-          for (let a in cuisine_types) {
-              if (cuisine_types[a] > max_num) {
-                  max_cuisine = a;
-                  max_num = cuisine_types[a];
-              }
-          }
-          max_cuisine_per_zip[z] = {
-              cuisine: max_cuisine,
-              count: max_num
-          };
-      }
-      return max_cuisine_per_zip;
-  
-}
-
-  function countByAnimalType(table){
-    let zip_count = {};
-        for (let k = 0; k < table.length; k++) {
-          let curr_zip = table[k]['Incident Zip'];
-          let animal = table[k]['Descriptor'];
-          
-          if (!zip_count[curr_zip]) {
-            zip_count[curr_zip] = {};
-          }
-          if (zip_count[curr_zip][animal]) {
-            zip_count[curr_zip][animal] += 1;
-            
-          } else {
-            zip_count[curr_zip][animal] = 1;
-          }
-        }
-        let max_animal_per_zip = {};
-        for (let z in zip_count) {
-          let animal_types = zip_count[z];
-          let max_animal;
-          let max_num = -1;
-          for (let a in animal_types) {
-              if (animal_types[a] > max_num) {
-                  max_animal = a;
-                  max_num = animal_types[a];
-              }
-          }
-          max_animal_per_zip[z] = {
-              animal: max_animal,
-              count: max_num
-          };
-      }
-      return max_animal_per_zip;
-  }
+ 
 
   function updateData(){
+
+    let subInfo = uniqueInfoUsed.slice(filter1[0], filter1[1]);
+    let data1 = [];
+    let data2 = [];
     if (filter1.length > 0 && filter2.length > 0) {
-      data = fullData.filter((d) => (d.properties[var1] >= filter1[0] && d.properties[var1] < filter1[1] && d.properties[var2] >= filter2[0] && d.properties[var2] < filter2[1]));
+      data = fullData.filter((d) => ((d.idx >= filter2[0][0] && d.idx <= filter2[1][0] 
+      && d.count >= filter2[1][1] && d.count <= filter2[0][1] && subInfo.some((m) => d.mentioned.includes(m)))));
+      data2 = fullData.filter((d) => {
+        let isMentioned = subInfo.some((m) => d.mentioned.includes(m));
+        // if (isMentioned) {
+        //   result.push(d);
+        // }
+        return isMentioned;
+      });
+      // data = [...new Set([...data1, ...data2])]
     } else if (filter1.length > 0 && filter2.length == 0) {
-      data = fullData.filter((d) => (d.properties[var1] >= filter1[0] && d.properties[var1] < filter1[1]));
+      let result = [];
+      let result2 = [];
+      // data2 = fullData.filter((d) => {
+      //     // Check if any elements of subInfo are mentioned
+          
+      //     let isMentioned = subInfo.some((m) => d.mentioned.includes(m));
+      //     if (isMentioned) {
+      //       let temp = { ...d };
+      //         // Update the mentioned property to include only elements that match subInfo
+      //         temp.mentioned = d.mentioned.filter(m => subInfo.includes(m));
+      //         return temp;
+      //     }
+      //     return isMentioned;
+      // });
+      data = fullData.filter((d) => {
+        let isMentioned = subInfo.some((m) => d.mentioned.includes(m));
+        // if (isMentioned) {
+        //   result.push(d);
+        // }
+        return isMentioned;
+      });
     } else if (filter1.length == 0 && filter2.length > 0) {
-      data = fullData.filter((d) => (d.properties[var2] >= filter2[0] && d.properties[var2] < filter2[1]));
+      data = fullData.filter((d) => ((d.idx >= filter2[0][0] && d.idx <= filter2[1][0] 
+      && d.count >= filter2[1][1] && d.count <= filter2[0][1])));
+      console.log(data)
+      console.log(fullData)
+      // data = fullData.filter((d) => (d.properties[var2] >= filter2[0] && d.properties[var2] < filter2[1]));
     } else {
       data = [...fullData];
+      // new_cuisine_list =  Array.from(new Set(data.map(d => d.properties["max_cuisine"])));
     }
   }
-  
+  function getRandomInt(max) {
+    return Math.floor(Math.random() * max);
+  }
+
+  function getQuestion() {
+    indicator = getRandomInt(2) + 2;
+    if (indicator == 1) {
+      question = "Your task is: Check the air quality in Chicago";
+    } else if (indicator == 2) {
+      question = "Your task is: Analyze customer preferences for new product features";
+    } else if (indicator == 3) {
+      question = "Your task is: Build visualizations for storytelling about elections";
+    }
+  }
+  getQuestion()
+  function addNewDataPoint() {
+    // Create a new data point based on user input
+    const newDataPoint = {
+      idx: fullData.length, // Use the next index value
+      mentioned: [...userInput],
+      count: userInput.length,
+      // Add any additional properties or default values as needed
+    };
+
+    // Add the new data point to fullData
+    if (indicator == 1) {
+      console.log('check1');
+      fullData = [...fullData, newDataPoint];
+    } else if (indicator == 2) {
+      console.log('check2');
+      const middleIndex = Math.floor(fullData.length / 2);
+    fullData = [
+      ...fullData.slice(0, middleIndex),
+      newDataPoint,
+      ...fullData.slice(middleIndex)
+    ];
+    } else if (indicator == 3) {
+      console.log('check3');
+      fullData = [newDataPoint, ...fullData];
+    }
+    fullData = fullData.map((item, index) => {
+    item.idx = index;
+    return item;
+  });
+    data = fullData;
+    d3.select(brushLayer).call(brush.move, null);
+    console.log('Added new data point:', newDataPoint);
+    console.log('Updated fullData:', fullData);
+    d3.select(marks).selectAll("circle")
+            .data(fullData)
+            // .style("fill", "goldenrod")
+            .transition()
+            .duration(350)
+            .delay(100)
+            .attr("r", d => d === newDataPoint ? 10 : 6)
+            .style("fill", d => d === newDataPoint ? "blue" : "goldenrod")
+            .transition()
+            .duration(750)
+            .delay(500)
+            .attr("r", 6)
+            .style("fill", "goldenrod")
+            // .attr("r", 10)
+    console.log("testing");
+
+    
+    // d3.select(marks).selectAll("circle")
+    // .data(fullData).exit().remove();
+    
+  }
 </script>
 
 <main>
-  <h1>NYC Restaurants</h1>
+  <!-- <h1>NYC Restaurants</h1> -->
+  <h1>Identify Your Key Criteria: Evaluating Dataset Usefulness for Your Task</h1>
+  <div class="paragraphs">
+  <p>
+    Data workers search for and leverage datasets for a wide range of tasks. However, previous studies have shown that effectively navigating to datasets that meet their specific information needs remains a challenge. 
+  </p>
+  <p>
+To explore this, we conducted a survey study with 41 participants who work with data on a regular basis to understand how people currently search for datasets on open data sharing platforms, the types of information they rely on, and the factors that influence their decision on whether to use a dataset.
+</p>
+<p>
+We collected a total of 68 tasks from these participants, which we grouped along a ranging from exploratory to confirmatory tasks. The exploratory tasks included broadly open-ended activities such as “Build visualizations for storytelling about elections,” while the confirmatory tasks included more definitive objectives, such as “Check the air quality in Pittsburgh.” Positioned between them were tasks categorized as "rough confirmatory," such as “Analyze customer preferences for new product features.”
+</p>
+<p>While analyzing the responses, we noticed that participants established some <b>criteria</b> when explaining their rationale for selecting datasets. Consequently, we categorized the responses based on the criteria mentioned, which we believe could serve as a proxy for their underlying needs.</p>
+<p>
+On the <b>scatter plot</b>, although we can not see a sharply defined boundary separating these categories, we did notice a trend: participants engaging in tasks classified as rough confirmatory (in the middle part of the scatter plot) tended to mention a greater number of criteria compared to other task types.  
+</p>
+<p>We hypothesize that this is because, for well-defined tasks, participants have a clearer and more specific understanding of what they are seeking, which reduces their reliance on a broader set of criteria as a proxy for decision-making. Conversely, for open-ended exploratory tasks, participants are still broadly exploring possibilities and may pay less attention to criteria that determine whether a dataset is of usable quality.</p>
+<p>The <b>bar chart</b> shows the frequency with which each criterion was mentioned, indicating the most important criteria that people commonly rely on when making their judgments. The popularity of these criteria may be influenced by the limited availability of information on sharing platforms or reflect their genuine importance to people who are searching for datasets. </p>
+</div>  
+<div class="flex-container row">
+    
 
+    <!-- <div class="map"><Heatmap data={data} fullData={fullData}/></div> -->
+    <div><Scatterplot data={data} fullData={fullData} criteria={criteria} update={updateData} bind:filter={filter2} bind:marks={marks} bind:marks2={marks2} /></div>
+    <!-- <div><Histogram2 data={data} fullData={fullData} criteria={criteria}/></div> -->
+    <div><BarChart data={data} fullData={fullData} criteria={criteria} update={updateData} bind:filter={filter1} bind:brushLayer={brushLayer} bind:brush={brush}/></div>
+    <!-- <div><Parallel data={data} fullData={fullData} criteria={criteria} update={updateData} bind:filter={filter1}/></div> -->
+  </div>
+  <div class="paragraphs">
+    <p>When brushing over the criteria in the <b>bar chart</b>, it highlights the criteria that are commonly mentioned together, which suggests the patterns of criteria that tend to be grouped. Simultaneously, the data points on the <b>scatter plot</b>, which represent individual tasks, are also highlighted. These highlighted points correspond to tasks where participants reported relying on the selected criteria while searching for datasets
+    </p>
+    <p><b>Now, let's add your point to the dataset. You have been randomly assigned a task. Based on this task, which criteria do you believe would help you determine the usefulness of a dataset?</b></p>
+  </div>
   <div class="flex-container row">
-    <div class="map"><Map data={data} fullData={fullData} variable={var1}></Map></div>
-    <p>Cuisine Diversity Map</p>
-    <div class="map"><Map data={data} fullData={fullData} variable={var3}></Map></div>
-    <p>Most Popular Cuisine</p>
-    <div class="flex-container col">
-      <div class="hist"><Histogram data={data} fullData={fullData} variable={var1} bind:filter={filter1} update={updateData}></Histogram></div>
-      <p>Cuisine Count by Zip Code</p>
-      <div class="hist"><Histogram data={data} fullData={fullData} variable={var2} bind:filter={filter2} update={updateData}></Histogram></div>
-      <p>Restaurant Count by Zip Code</p>
+    <p>{question}</p>
+    <div class="selection">
+      {#each uniqueInfoUsed as c, i}
+          <label>
+            <input type="checkbox" bind:group={userInput} value={c} />
+            {c}
+          </label>
+          {#if (i+1) % 4 == 0}
+          <br/>
+          {/if}
+      {/each}
     </div>
   </div>
+  <button on:click={addNewDataPoint}>Add A New Data Point</button>
 </main>
 
 <style>
-  
-  /* .flex-container {
+  .selection {
+    text-align: left;
+  }
+  .flex-container {
     display: flex;
     justify-content: center;  
     height: 100%;
-    padding: 15px;
-    gap: 5px;
+    padding: 10px;
+    gap: 0px;
   }
 
   .flex-container > div{
@@ -256,5 +307,22 @@
 			
   .hist { 
     flex-grow:0;
-  } */
+    margin-top: 10px;
+  }
+
+  p {
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    text-align: center;
+  }
+
+  .hist-text {
+    margin-bottom: 10px;
+  }
+
+  p {
+    text-align: left;
+  }
+
+  
 </style>
