@@ -230,7 +230,8 @@
   <!-- <h1>NYC Restaurants</h1> -->
   <h1>Identify Your Key Criteria: Evaluating Dataset Usefulness for Your Task</h1>
   <div class="paragraphs">
-  <p>
+    <div class="background">
+    <p>
     Data workers search for and leverage datasets for a wide range of tasks. However, previous studies have shown that effectively navigating to datasets that meet their specific information needs remains a challenge. 
   </p>
   <p>
@@ -239,6 +240,7 @@ To explore this, we conducted a survey study with 41 participants who work with 
 <p>
 We collected a total of 68 tasks from these participants, which we grouped along a ranging from exploratory to confirmatory tasks. The exploratory tasks included broadly open-ended activities such as “Build visualizations for storytelling about elections,” while the confirmatory tasks included more definitive objectives, such as “Check the air quality in Pittsburgh.” Positioned between them were tasks categorized as "rough confirmatory," such as “Analyze customer preferences for new product features.”
 </p>
+</div>
 <p>While analyzing the responses, we noticed that participants established some <b>criteria</b> when explaining their rationale for selecting datasets. Consequently, we categorized the responses based on the criteria mentioned, which we believe could serve as a proxy for their underlying needs.</p>
 <p>
 On the <b>scatter plot</b>, although we can not see a sharply defined boundary separating these categories, we did notice a trend: participants engaging in tasks classified as rough confirmatory (in the middle part of the scatter plot) tended to mention a greater number of criteria compared to other task types.  
@@ -299,6 +301,23 @@ On the <b>scatter plot</b>, although we can not see a sharply defined boundary s
 
   .flex-container .col {
     flex-direction: column;  
+  }
+  .background {
+    /* color: grey; */
+    font-size: 14px;
+    line-height: 20px;   /* within paragraph */
+    margin-top: 10px;
+    /* border-color: grey; */
+    opacity: 0.8;
+    border-width:1px;
+    border-style:solid;
+    padding: 10px 30px;
+    border-radius: 10px;
+    /* background-color: lightblue; */
+
+  }
+  .background p {
+    margin: 10px;
   }
 
   .map { 
