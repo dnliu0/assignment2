@@ -18,6 +18,7 @@
 
     let xAxis;
     let yAxis;
+    let xLabel;
 
     let tempCriteria = ['Topic alignment',
                     'Comprehensive Coverage',
@@ -114,11 +115,31 @@
             d3.select(brushLayer)
                 .call(brush);
             d3.select(xAxis)
-                .call(d3.axisBottom(xScale)).selectAll("text")
+                .call(d3.axisBottom(xScale))
+                .selectAll("text")
                 .attr("transform", "rotate(-45)")
                 .style("text-anchor", "end");
             d3.select(yAxis)
                 .call(d3.axisLeft(yScale));
+            
+                d3.select(xLabel).append("text")
+                // .append("text")
+                .style("font-family", "sans-serif")
+                .style("font-size", "11px")
+                .style("font-weight", "bold")
+                .style("fill", "black")
+                .attr("transform", "rotate(0)")
+                .style("transform", `translate(${chartW / 2}px, ${120}px)`)
+                .text("Criteria");
+            
+        d3.select(yAxis)
+            .append("text")
+            .style("font-family", "sans-serif")
+            .style("font-size", "11px")
+            .style("font-weight", "bold")
+            .style("fill", "black")
+            .style("transform", `translate(${-margin.left / 2 }px, ${chartH / 2-50}px) rotate(-90deg)`)
+            .text("Frequency of Mentions")
         }
     //$: console.log(fullData[0]['mentioned']);
   
@@ -157,6 +178,8 @@
        
         <g transform="translate({margin.left}, {chartH + margin.top})" 
             bind:this={xAxis} />
+        <g transform="translate({margin.left}, {chartH + margin.top})" 
+            bind:this={xLabel} />
 
         <g transform="translate({margin.left}, {margin.top})"
             bind:this={yAxis} />
